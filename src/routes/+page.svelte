@@ -171,7 +171,7 @@
 
 <div class="wrap">
   <aside class="panel">
-    <h1>AI Ideation (Front-end Mock up)</h1>
+    <h1>AI Ideation Tool</h1>
 
     <div class="slider-group">
       <label>Topic / Context</label>
