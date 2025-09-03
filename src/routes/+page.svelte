@@ -1,14 +1,7 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://svelte.dev/docs/kit">svelte.dev/docs/kit</a> to read the documentation</p>
 <script>
   // ---------- STATE ----------
   let topic = $state("Campus productivity for engineering students");
   let category = $state("EdTech");
-
-  // Model picker (mock)
-  let model = $state("OpenAI (mock)");
-  const models = ["OpenAI (mock)", "Gemini (mock)", "Claude (mock)"];
-
   let innovation = $state(50); // 0..100
 
   // Fine-grained filters (1..10 scales)
@@ -41,7 +34,6 @@
 
     return {
       title,
-      model_used: model, // for display; no backend
       elevator_pitch: radical
         ? "Bold concept that challenges current tools; higher risk, higher potential."
         : "Practical idea aimed at quick value with low risk.",
@@ -95,7 +87,8 @@
   // ---------- ACTIONS ----------
   async function onGenerate(){
     loading = true; error = null; results = null; selected=null; activeTab="ideas";
-    await new Promise(r=>setTimeout(r, 900));
+    // Simulate API time
+    await new Promise(r=>setTimeout(r, 1200));
     results = generateMockIdeas();
     loading = false;
   }
@@ -104,12 +97,13 @@
 <style>
   :root{ --panel:#0b1222; --card:#0f1b34; --muted:#9fb3d1; }
   body{ margin:0; font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial; background:#0b1222; color:#e6edf6; }
-  .wrap{ display:grid; grid-template-columns:360px 1fr; gap:16px; min-height:100vh; padding:16px; }
+  .wrap{ display:grid; grid-template-columns:360px minmax(0,1fr); gap:16px; min-height:100vh; padding:16px; }
   .panel{ background:var(--panel); border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:16px; }
   .right{ display:flex; flex-direction:column; gap:12px; }
   h1{ font-size:20px; margin:0 0 12px; }
   label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
-  input, select, textarea{ width:100%; background:#0f1b34; color:#e6edf6; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px 12px; }
+  input, select, textarea{ width:100%; max-width:100%; background:#0f1b34; color:#e6edf6; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px 12px; box-sizing:border-box; }
+  input[type="range"]{ display:block; width:100%; max-width:100%; }
   textarea{ min-height:78px; resize:vertical; }
   .row{ display:flex; gap:10px; }
   .btn{ background:linear-gradient(180deg,#2563eb,#1d4ed8); border:none; color:#fff; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; }
@@ -135,8 +129,26 @@
     border-radius:10px;
     margin-bottom:10px;
     background:rgba(255,255,255,.02);
+    overflow:hidden; /* keep range thumbs within bounds */
   }
-  .two-col{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+  /* two-column grid that never overflows */
+  .two-col{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
+
+  /* Loading overlay */
+  .content-panel{ position:relative; min-height:320px; }
+  .overlay{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    background:rgba(2,6,23,.72); backdrop-filter:saturate(110%) blur(2px);
+    z-index:10; text-align:center; padding:24px;
+  }
+  .spinner{
+    width:48px; height:48px; border-radius:50%;
+    border:3px solid rgba(255,255,255,.2); border-top-color:#fff;
+    animation:spin 0.9s linear infinite; margin-bottom:12px;
+  }
+  @keyframes spin{ to{ transform: rotate(360deg) } }
 
   @media (max-width:1024px){
     .wrap{ grid-template-columns:1fr; }
@@ -161,21 +173,10 @@
       </select>
     </div>
 
-    <!-- Model + Innovation in a row -->
-    <div class="two-col">
-      <div class="slider-group">
-        <label>Model</label>
-        <select bind:value={model}>
-          {#each models as m}<option>{m}</option>{/each}
-        </select>
-        <div class="mini">Demo only — no API calls yet.</div>
-      </div>
-
-      <div class="slider-group">
-        <label>Innovation</label>
-        <input type="range" min="0" max="100" bind:value={innovation} />
-        <div class="mini">{innovation<=33?"Practical":innovation<=66?"Balanced":"Radical"}</div>
-      </div>
+    <div class="slider-group">
+      <label>Innovation</label>
+      <input type="range" min="0" max="100" bind:value={innovation} />
+      <div class="mini">{innovation<=33?"Practical":innovation<=66?"Balanced":"Radical"}</div>
     </div>
 
     <!-- Fine-grained sliders -->
@@ -218,7 +219,7 @@
     </div>
 
     <div class="hr"></div>
-    <div class="mini">Filters apply live to the 10 generated ideas. Model picker is for demo only.</div>
+    <div class="mini">Filters apply live to the 10 generated ideas.</div>
   </aside>
 
   <!-- RIGHT -->
@@ -231,17 +232,22 @@
       </div>
     </div>
 
-    <div class="panel" style="min-height:320px">
+    <div class="panel content-panel" aria-busy={loading}>
+      {#if loading}
+        <div class="overlay" role="status" aria-live="polite">
+          <div class="spinner"></div>
+          <div class="mini">Generating 10 ideas…</div>
+        </div>
+      {/if}
+
       {#if error}
         <div class="card">Error: {error}</div>
-      {:else if loading}
-        <div class="card">Generating & scoring…</div>
       {:else if !results}
         <div class="card">Click “Generate 10 ideas”.</div>
       {:else}
         {#if activeTab === 'ideas'}
           <div class="mini" style="margin-bottom:8px">
-            Showing {filteredIdeas().length} / 10 ideas that match your filters. (Model: {model})
+            Showing {filteredIdeas().length} / 10 ideas that match your filters.
           </div>
           <div class="grid">
             {#each filteredIdeas() as it}
@@ -250,7 +256,6 @@
                 <div class="title">{it.title}</div>
                 <div class="pitch">{it.elevator_pitch}</div>
                 <div class="badges" style="margin-top:8px">
-                  <span class="badge">{it.model_used}</span>
                   <span class="badge">Innovation: {it.innovation_level}</span>
                   <span class="badge">Tech {it.feasibility.tech}/10</span>
                   <span class="badge">Res {it.feasibility.resources}/10</span>
@@ -280,7 +285,6 @@
               <div class="card">
                 <div class="title">{it.title}</div>
                 <div class="badges">
-                  <span class="badge">{it.model_used}</span>
                   <span class="badge">Tech {it.feasibility.tech}/10</span>
                   <span class="badge">Resources {it.feasibility.resources}/10</span>
                   <span class="badge">Speed {it.feasibility.timeline}/10</span>
@@ -302,7 +306,6 @@
               <div class="mini"><b>Risks:</b> {selected.market.risks.join(", ")}</div>
               <div class="mini"><b>MVP:</b> {selected.mvp_scope.join(", ")}</div>
               <div class="badges" style="margin-top:10px">
-                <span class="badge">{selected.model_used}</span>
                 <span class="badge">Tech {selected.feasibility.tech}/10</span>
                 <span class="badge">Res {selected.feasibility.resources}/10</span>
                 <span class="badge">Speed {selected.feasibility.timeline}/10</span>
