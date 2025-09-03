@@ -1,14 +1,12 @@
 <script>
-  // ---------- STATE ----------
   let topic = $state("Campus productivity for engineering students");
   let category = $state("EdTech");
-  let innovation = $state(50); // 0..100
+  let innovation = $state(50);
 
-  // Fine-grained filters (1..10 scales)
   let minTech = $state(6);
   let minResources = $state(6);
-  let minTimelineSpeed = $state(6); // higher = faster (less time)
-  let maxPrice = $state(6);         // lower = cheaper
+  let minTimelineSpeed = $state(6);
+  let maxPrice = $state(6);
   let minMarket = $state(7);
 
   let loading = $state(false);
@@ -19,18 +17,16 @@
 
   const categories = ["EdTech","IoT/Embedded","Health","FinTech","Sustainability","Campus Life"];
 
-  // ---------- MOCK IDEA FACTORY ----------
   const clamp = (n,min,max)=>Math.max(min,Math.min(max,n));
   const randInt = (a,b)=>Math.floor(Math.random()*(b-a+1))+a;
 
   function makeIdea(title, radical=false){
-    // Base ratings 1..10; price_rating => 1=cheap, 10=expensive
     const tech       = clamp(randInt(5,10) - (radical?1:0),1,10);
     const resources  = randInt(5,10);
-    const timeline   = randInt(5,10);   // speed (higher = faster)
+    const timeline   = randInt(5,10);
     const price      = randInt(3,9) + (radical?1:0);
     const mBase      = 6 + (radical?1:0) + (Math.random()>.5?1:0);
-    const market_rating = clamp(Math.round(mBase + (Math.random()>.7?1:0)), 1, 10); // stable per idea
+    const market_rating = clamp(Math.round(mBase + (Math.random()>.7?1:0)), 1, 10);
 
     return {
       title,
@@ -65,17 +61,16 @@
       "Skill Map: tasks → competencies",
       "Group-Work Radar: teammate reliability"
     ];
-    return { ideas: titles.map((t,i)=>makeIdea(t, rad && i%3===0)) }; // 10 ideas
+    return { ideas: titles.map((t,i)=>makeIdea(t, rad && i%3===0)) };
   }
 
-  // ---------- SCORING & FILTERS ----------
   const marketScore = (i) => i.market_rating;
   function passesFineGrained(i){
     const f=i.feasibility, m=marketScore(i);
     const okTech = f.tech >= minTech;
     const okRes  = f.resources >= minResources;
-    const okTime = f.timeline >= minTimelineSpeed; // faster = better
-    const okPrice= f.price_rating <= maxPrice;     // cheaper = better
+    const okTime = f.timeline >= minTimelineSpeed;
+    const okPrice= f.price_rating <= maxPrice;
     const okMkt  = m >= minMarket;
     return { okTech, okRes, okTime, okPrice, okMkt, all: okTech && okRes && okTime && okPrice && okMkt, m };
   }
@@ -84,10 +79,8 @@
     return results.ideas.filter(i => passesFineGrained(i).all);
   }
 
-  // ---------- ACTIONS ----------
   async function onGenerate(){
     loading = true; error = null; results = null; selected=null; activeTab="ideas";
-    // Simulate API time
     await new Promise(r=>setTimeout(r, 1200));
     results = generateMockIdeas();
     loading = false;
@@ -100,13 +93,33 @@
   .wrap{ display:grid; grid-template-columns:360px minmax(0,1fr); gap:16px; min-height:100vh; padding:16px; }
   .panel{ background:var(--panel); border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:16px; }
   .right{ display:flex; flex-direction:column; gap:12px; }
-
-  /* make the top title pure white */
   h1{ font-size:20px; margin:0 0 12px; color:#ffffff; }
-
   label{ font-size:12px; color:var(--muted); display:block; margin-bottom:6px; }
-  input, select, textarea{ width:100%; max-width:100%; background:#0f1b34; color:#e6edf6; border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px 12px; box-sizing:border-box; }
-  input[type="range"]{ display:block; width:100%; max-width:100%; }
+
+  input, select, textarea{
+    width:100%;
+    max-width:100%;
+    background:#0f1b34;
+    color:#e6edf6;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:10px;
+    padding:10px 12px;
+    box-sizing:border-box;
+  }
+
+  /* Ensure range tracks reach the true edges (no inner padding/margins) */
+  input[type="range"]{
+    width:100%;
+    max-width:100%;
+    padding:0;
+    margin:0;
+    background:#0f1b34;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:10px;
+    height:34px;
+    box-sizing:border-box;
+  }
+
   textarea{ min-height:78px; resize:vertical; }
   .row{ display:flex; gap:10px; }
   .btn{ background:linear-gradient(180deg,#2563eb,#1d4ed8); border:none; color:#fff; padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; }
@@ -125,20 +138,17 @@
   .mini{ font-size:12px; color:#a9b8d7; }
   .hr{ height:1px; background:rgba(255,255,255,.06); margin:8px 0; }
 
-  /* bordered groups */
   .slider-group{
     padding:10px 12px;
     border:1px solid rgba(255,255,255,.10);
     border-radius:10px;
     margin-bottom:10px;
     background:rgba(255,255,255,.02);
-    overflow:hidden; /* keep range thumbs within bounds */
+    overflow:hidden;
   }
 
-  /* two-column grid that never overflows */
   .two-col{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; }
 
-  /* Loading overlay */
   .content-panel{ position:relative; min-height:320px; }
   .overlay{
     position:absolute; inset:0; display:flex; flex-direction:column;
@@ -160,9 +170,8 @@
 </style>
 
 <div class="wrap">
-  <!-- LEFT: Controls -->
   <aside class="panel">
-    <h1>AI Ideation</h1>
+    <h1>AI Ideation (Front-end Mock up)</h1>
 
     <div class="slider-group">
       <label>Topic / Context</label>
@@ -182,7 +191,6 @@
       <div class="mini">{innovation<=33?"Practical":innovation<=66?"Balanced":"Radical"}</div>
     </div>
 
-    <!-- Fine-grained sliders -->
     <div class="two-col">
       <div class="slider-group">
         <label>Tech (min)</label>
@@ -225,7 +233,6 @@
     <div class="mini">Filters apply live to the 10 generated ideas.</div>
   </aside>
 
-  <!-- RIGHT -->
   <section class="right">
     <div class="panel" style="padding:10px">
       <div class="tabs">
